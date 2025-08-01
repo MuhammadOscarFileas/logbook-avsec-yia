@@ -1,0 +1,21 @@
+runtime: nodejs20
+service: yojo-f06
+instance_class: F1
+
+handlers:
+  # Serve static files
+  - url: /(.*\.(gif|png|jpg|css|js|ico|json))$
+    static_files: build/\1
+    upload: build/.*\.(gif|png|jpg|css|js|ico|json)$
+    secure: always
+
+  # Serve index.html for all other routes (for client-side routing)
+  - url: /.*
+    static_files: build/index.html
+    upload: build/index.html
+    secure: always
+
+env_variables:
+  NODE_ENV: "production"
+
+default_expiration: "1h"
