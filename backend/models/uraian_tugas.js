@@ -32,7 +32,7 @@ const UraianTugas = db.define(
       allowNull: false,
     },
     keterangan: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: true,
     },
   },

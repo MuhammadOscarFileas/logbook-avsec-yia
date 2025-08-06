@@ -102,7 +102,7 @@ function laporanToHTML(laporan, uraianTugas, uraianInventaris) {
         <tr>
           <td class="ttd-header">Pembuat</td>
           <td class="ttd-header">Penerima</td>
-          <td class="ttd-header">Chief</td>
+          <td class="ttd-header">Chief ${laporan.pos}</td>
         </tr>
         <tr>
           <td class="ttd-cell">

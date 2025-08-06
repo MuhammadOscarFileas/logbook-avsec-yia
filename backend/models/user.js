@@ -35,7 +35,7 @@ const UserModel = db.define(
       allowNull: false,
     },
     role: {
-      type: DataTypes.ENUM("superadmin", "supervisor", "officer"),
+      type: DataTypes.ENUM("superadmin", "chief", "officer"),
       allowNull: false,
     },
     first_login: {

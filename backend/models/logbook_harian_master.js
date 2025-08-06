@@ -14,6 +14,10 @@ const LogbookHarianMaster = db.define(
       allowNull: false,
     },
     shift: {
+      type: DataTypes.ENUM("Pagi (07:00 - 13:00)", "Siang (13:00 - 19:00)", "Malam (19:00 - 07:00)"),
+      allowNull: false,
+    },
+    regu: {
       type: DataTypes.STRING,
       allowNull: false,
     },

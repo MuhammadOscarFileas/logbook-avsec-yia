@@ -64,7 +64,8 @@ const PORT = process.env.PORT || 5000;
 
 const corsOptions = {
   origin: [
-    "http://localhost:3000", // saat local dev
+    "http://localhost:3000",
+    "http://localhost:3001", // saat local dev
     "https://c3826a20e8ed.ngrok-free.app", // ngrok tunnel
     "https://w50hv1z0-3000.asse.devtunnels.ms", // 
   ],
