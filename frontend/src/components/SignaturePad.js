@@ -13,6 +13,23 @@ const SignaturePad = ({
 }) => {
   const sigPadRef = useRef(null);
   const [hasSignature, setHasSignature] = useState(!!defaultValue);
+  const [canvasSize, setCanvasSize] = useState({ width: width, height: height });
+
+  // Responsive canvas size
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        setCanvasSize({ width: 280, height: 100 });
+      } else {
+        setCanvasSize({ width: width, height: height });
+      }
+    };
+
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+    return () => window.removeEventListener('resize', updateCanvasSize);
+  }, [width, height]);
 
   // Fungsi untuk menggambar signature di tengah canvas
   const drawCenteredSignature = (base64) => {
@@ -69,9 +86,9 @@ const SignaturePad = ({
           border: '2px solid #e5e7eb',
           borderRadius: '8px',
           backgroundColor: backgroundColor,
-          padding: '12px',
+          padding: '8px',
           width: '100%',
-          minHeight: height + 40,
+          minHeight: canvasSize.height + 40,
           position: 'relative'
         }}
       >
@@ -82,7 +99,7 @@ const SignaturePad = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              height: height,
+              height: canvasSize.height,
               color: '#9ca3af',
               fontSize: '14px',
               fontStyle: 'italic'
@@ -96,19 +113,21 @@ const SignaturePad = ({
               ref={sigPadRef}
               penColor={penColor}
               canvasProps={{
-                width: width,
-                height: height,
+                width: canvasSize.width,
+                height: canvasSize.height,
                 className: 'signature-canvas',
                 style: {
                   border: '1px solid #d1d5db',
                   borderRadius: '4px',
-                  backgroundColor: backgroundColor
+                  backgroundColor: backgroundColor,
+                  width: '100%',
+                  maxWidth: `${canvasSize.width}px`
                 }
               }}
               onEnd={handleEnd}
               clearOnResize={false}
             />
-            <div className="signature-controls" style={{ marginTop: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div className="signature-controls" style={{ marginTop: '8px', display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               <button
                 type="button"
                 onClick={handleClear}

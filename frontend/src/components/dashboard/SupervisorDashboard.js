@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/useAuth';
 import { useNavigate } from 'react-router-dom';
 import PasswordResetModal from '../PasswordResetModal';
+import axiosInstance from '../../api/axiosInstance';
 
 const SupervisorDashboard = () => {
   const { auth } = useAuth();
   const navigate = useNavigate();
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [unsignedCount, setUnsignedCount] = useState(0);
+  const [signedCount, setSignedCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   // Check if user needs to reset password
   useEffect(() => {
@@ -15,14 +19,43 @@ const SupervisorDashboard = () => {
     }
   }, [auth?.user?.first_login]);
 
+  // Fetch counts for dashboard
+  useEffect(() => {
+    const fetchCounts = async () => {
+      if (!auth?.user?.nama_lengkap) return;
+      
+      try {
+        setLoading(true);
+        const supervisorName = encodeURIComponent(auth.user.nama_lengkap);
+        
+        // Fetch unsigned reports count
+        const unsignedResponse = await axiosInstance.get(`/api/logbook-harian-master/count-belum-ttd-supervisor/${supervisorName}`);
+        setUnsignedCount(unsignedResponse.data.total || 0);
+        
+        // Fetch signed reports count
+        const signedResponse = await axiosInstance.get(`/api/logbook-harian-master/sudah-ttd-supervisor/${supervisorName}`);
+        setSignedCount(signedResponse.data.total || 0);
+      } catch (err) {
+        console.error('Error fetching counts:', err);
+        // Set default values on error
+        setUnsignedCount(0);
+        setSignedCount(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCounts();
+  }, [auth?.user?.nama_lengkap]);
+
   const handlePasswordResetSuccess = () => {
     setShowPasswordReset(false);
     // The auth context is already updated by the modal
   };
 
   const handleLaporanClick = () => {
-    // Navigate to reports page
-    navigate('/supervisor/laporan');
+    // Navigate to signed reports page
+    navigate('/supervisor/laporan-sudah-ditandatangani');
   };
 
   const handleBelumDitandatanganiClick = () => {
@@ -51,19 +84,21 @@ const SupervisorDashboard = () => {
 
           {/* Baris 2: 2 Card */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Card Laporan */}
+            {/* Card Laporan Sudah Ditandatangani */}
             <div 
               className="bg-white rounded-lg shadow-lg p-6 cursor-pointer hover:shadow-xl transition-shadow duration-300"
               onClick={handleLaporanClick}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Laporan</h3>
-                  <p className="text-gray-600">Lihat semua laporan yang tersedia</p>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Laporan Sudah Ditandatangani</h3>
+                  <p className="text-gray-600">
+                    {loading ? 'Memuat...' : `${signedCount} laporan telah ditandatangani`}
+                  </p>
                 </div>
-                <div className="text-blue-600">
+                <div className="text-green-600 relative">
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
               </div>
@@ -77,12 +112,20 @@ const SupervisorDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">Belum Ditandatangani</h3>
-                  <p className="text-gray-600">Laporan yang menunggu tanda tangan Anda</p>
+                  <p className="text-gray-600">
+                    {loading ? 'Memuat...' : `${unsignedCount} laporan menunggu tanda tangan`}
+                  </p>
                 </div>
-                <div className="text-orange-600">
+                <div className="text-orange-600 relative">
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
+                  {/* Notification Badge */}
+                  {unsignedCount > 0 && (
+                    <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
+                      {unsignedCount > 99 ? '99+' : unsignedCount}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

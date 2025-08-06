@@ -5,6 +5,7 @@ import OfficerDashboard from './components/dashboard/OfficerDashboard';
 import SupervisorDashboard from './components/dashboard/SupervisorDashboard';
 import SupervisorAllReports from './components/dashboard/SupervisorAllReports';
 import SupervisorUnsignedReports from './components/dashboard/SupervisorUnsignedReports';
+import SupervisorSignedReports from './components/dashboard/SupervisorSignedReports';
 import SuperAdminDashboard from './components/dashboard/SuperAdminDashboard';
 import Login from './components/Login';
 import LogbookHarianMasterTable from './forms/masters/LogbookHarianMasterTable';
@@ -77,6 +78,14 @@ const Router = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/forms/masters/logbook-harian/preview/:id"
+          element={
+            <ProtectedRoute>
+              <LogbookHarianMasterForm previewMode={true} />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Supervisor Routes */}
         <Route
@@ -92,6 +101,14 @@ const Router = () => {
           element={
             <RoleBasedRoute allowedRoles={['supervisor', 'superadmin']}>
               <SupervisorUnsignedReports />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/supervisor/laporan-sudah-ditandatangani"
+          element={
+            <RoleBasedRoute allowedRoles={['supervisor', 'superadmin']}>
+              <SupervisorSignedReports />
             </RoleBasedRoute>
           }
         />

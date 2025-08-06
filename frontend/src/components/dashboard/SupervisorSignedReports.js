@@ -3,7 +3,7 @@ import { useAuth } from '../../auth/useAuth';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
 
-const SupervisorUnsignedReports = () => {
+const SupervisorSignedReports = () => {
   const { auth } = useAuth();
   const navigate = useNavigate();
   const [reports, setReports] = useState([]);
@@ -11,18 +11,18 @@ const SupervisorUnsignedReports = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchUnsignedReports = async () => {
+    const fetchSignedReports = async () => {
       try {
         setLoading(true);
         setError(null);
         
         const supervisorName = auth?.user?.nama_lengkap;
         
-        // Use the dedicated API endpoint for unsigned reports
-        const response = await axiosInstance.get(`/api/laporan-belum-ttd-supervisor/${encodeURIComponent(supervisorName)}`);
+        // Use the API endpoint for signed reports
+        const response = await axiosInstance.get(`/api/logbook-harian-master/sudah-ttd-supervisor/${encodeURIComponent(supervisorName)}`);
         const data = response.data;
         
-        console.log('API Response:', data); // For debugging
+        console.log('Signed Reports API Response:', data); // For debugging
         
         // Transform the data to include type information
         const allReports = [];
@@ -37,7 +37,7 @@ const SupervisorUnsignedReports = () => {
         // Process each model type
         Object.keys(data).forEach(modelName => {
           const modelData = data[modelName];
-          console.log(`Processing ${modelName}:`, modelData); // For debugging
+          console.log(`Processing signed ${modelName}:`, modelData); // For debugging
           if (modelData && modelData.laporan && modelData.laporan.length > 0) {
             modelData.laporan.forEach(report => {
               // Map model names to display names
@@ -86,10 +86,10 @@ const SupervisorUnsignedReports = () => {
           }
         });
 
-        console.log('Processed Reports:', allReports); // For debugging
+        console.log('Processed Signed Reports:', allReports); // For debugging
         setReports(allReports);
       } catch (err) {
-        console.error('Error fetching unsigned reports:', err);
+        console.error('Error fetching signed reports:', err);
         console.error('Error response:', err.response?.data);
         setError(`Gagal mengambil data laporan: ${err.response?.data?.error || err.message}`);
       } finally {
@@ -98,47 +98,46 @@ const SupervisorUnsignedReports = () => {
     };
 
     if (auth?.user?.nama_lengkap) {
-      fetchUnsignedReports();
+      fetchSignedReports();
     }
   }, [auth?.user?.nama_lengkap]);
 
   const handleReportClick = (report) => {
-    // Navigate to the specific report form based on modelName
+    // Navigate to the specific report form in preview mode
     switch (report.modelName) {
       case 'logbook_harian_master':
-        navigate(`/forms/masters/logbook-harian/${report.id}`);
+        navigate(`/forms/masters/logbook-harian/preview/${report.id}`);
         break;
       case 'behaviour_master':
-        navigate(`/forms/masters/behaviour/${report.id}`);
+        navigate(`/forms/masters/behaviour/preview/${report.id}`);
         break;
       case 'form_kemajuan_personel_master':
-        navigate(`/forms/masters/form-kemajuan-personel/${report.id}`);
+        navigate(`/forms/masters/form-kemajuan-personel/preview/${report.id}`);
         break;
       case 'laporan_patroli_random_master':
-        navigate(`/forms/masters/laporan-patroli-random/${report.id}`);
+        navigate(`/forms/masters/laporan-patroli-random/preview/${report.id}`);
         break;
       case 'patroli_darat_master':
-        navigate(`/forms/masters/patroli-darat/${report.id}`);
+        navigate(`/forms/masters/patroli-darat/preview/${report.id}`);
         break;
       case 'patroli_udara_master':
-        navigate(`/forms/masters/patroli-udara/${report.id}`);
+        navigate(`/forms/masters/patroli-udara/preview/${report.id}`);
         break;
       case 'rotasi_personel_master':
-        navigate(`/forms/masters/rotasi-personel/${report.id}`);
+        navigate(`/forms/masters/rotasi-personel/preview/${report.id}`);
         break;
       case 'suspicious_master':
-        navigate(`/forms/masters/suspicious/${report.id}`);
+        navigate(`/forms/masters/suspicious/preview/${report.id}`);
         break;
       case 'walking_patrol_master':
-        navigate(`/forms/masters/walking-patrol/${report.id}`);
+        navigate(`/forms/masters/walking-patrol/preview/${report.id}`);
         break;
       case 'walking_patrol_non_terminal_master':
-        navigate(`/forms/masters/walking-patrol-non-terminal/${report.id}`);
+        navigate(`/forms/masters/walking-patrol-non-terminal/preview/${report.id}`);
         break;
       default:
         console.log('Unknown report type:', report.modelName);
-        // Fallback to a generic route or show error
-        alert('Jenis laporan ini belum didukung untuk ditandatangani');
+        alert('Jenis laporan ini belum didukung untuk ditampilkan');
     }
   };
 
@@ -169,8 +168,10 @@ const SupervisorUnsignedReports = () => {
     switch (status?.toLowerCase()) {
       case 'draft':
         return 'bg-yellow-100 text-yellow-800';
-      case 'submit to supervisor':
+      case 'submitted':
         return 'bg-blue-100 text-blue-800';
+      case 'completed':
+        return 'bg-green-100 text-green-800';
       case 'done':
         return 'bg-green-100 text-green-800';
       default:
@@ -206,7 +207,7 @@ const SupervisorUnsignedReports = () => {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">Laporan Belum Ditandatangani</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Laporan Sudah Ditandatangani</h1>
             <button
               onClick={() => navigate('/dashboard/supervisor')}
               className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
@@ -215,7 +216,7 @@ const SupervisorUnsignedReports = () => {
             </button>
           </div>
           <p className="text-gray-600">
-            Menampilkan laporan yang menunggu tanda tangan Anda sebagai supervisor
+            Menampilkan laporan yang telah ditandatangani oleh Anda sebagai supervisor
           </p>
         </div>
 
@@ -249,7 +250,7 @@ const SupervisorUnsignedReports = () => {
                 {reports.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                      Tidak ada laporan yang menunggu tanda tangan
+                      Tidak ada laporan yang telah ditandatangani
                     </td>
                   </tr>
                 ) : (
@@ -276,12 +277,12 @@ const SupervisorUnsignedReports = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(report.status)}`}>
-                          {report.status || 'Draft'}
+                          {report.status || 'Completed'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <button className="text-blue-600 hover:text-blue-900 font-medium">
-                          Lihat & Tandatangani
+                        <button className="text-green-600 hover:text-green-900 font-medium">
+                          Lihat Laporan
                         </button>
                       </td>
                     </tr>
@@ -295,7 +296,7 @@ const SupervisorUnsignedReports = () => {
         {/* Summary */}
         <div className="mt-6 bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-600">
-            Total laporan yang menunggu tanda tangan: <span className="font-semibold text-blue-600">{reports.length}</span>
+            Total laporan yang telah ditandatangani: <span className="font-semibold text-green-600">{reports.length}</span>
           </p>
         </div>
       </div>
@@ -303,4 +304,4 @@ const SupervisorUnsignedReports = () => {
   );
 };
 
-export default SupervisorUnsignedReports; 
+export default SupervisorSignedReports; 

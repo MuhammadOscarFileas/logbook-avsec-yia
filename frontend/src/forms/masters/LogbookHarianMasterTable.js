@@ -33,7 +33,7 @@ const LogbookHarianMasterTable = () => {
 
   const handlePreview = (e, id) => {
     e.stopPropagation();
-    navigate(`/forms/masters/logbook-harian/${id}`);
+    navigate(`/forms/masters/logbook-harian/preview/${id}`);
   };
 
   const handleDelete = async (e, id) => {

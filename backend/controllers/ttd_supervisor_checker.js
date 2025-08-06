@@ -55,13 +55,24 @@ export const getLaporanBelumTtdSupervisorByNama = async (req, res) => {
   const result = {};
   try {
     for (const entry of models) {
-      // Only check for supervisor name in ttd_supervisor field(s)
-      const orConditions = entry.fields.map(field => ({
-        [field]: { [Op.or]: [null, ""] },
+      // Build where condition: nama_supervisor matches AND any ttd_supervisor field is empty
+      const where = {
         nama_supervisor: nama
+      };
+      
+      // Add condition for empty signature fields
+      const ttdConditions = entry.fields.map(field => ({
+        [field]: { [Op.or]: [null, ""] }
       }));
-      // If model only has ttd_supervisor, use AND, else use OR for multiple fields
-      const where = orConditions.length > 1 ? { [Op.or]: orConditions } : orConditions[0];
+      
+      if (ttdConditions.length === 1) {
+        // Single field, use AND
+        Object.assign(where, ttdConditions[0]);
+      } else {
+        // Multiple fields, use OR for ttd conditions
+        where[Op.or] = ttdConditions;
+      }
+      
       const data = await entry.model.findAll({ where });
       result[entry.name] = {
         total: data.length,
@@ -92,14 +103,34 @@ export const getLogbookHarianMasterBelumTtdSupervisor = async (req, res) => {
 // GET /api/logbook-harian-master/sudah-ttd-supervisor/:nama
 export const getLogbookHarianMasterSudahTtdSupervisor = async (req, res) => {
   const nama = req.params.nama;
+  const result = {};
   try {
-    const data = await LogbookHarianMaster.findAll({
-      where: {
-        nama_supervisor: nama,
-        status: "Completed",
+    for (const entry of models) {
+      // Build where condition: nama_supervisor matches AND all ttd_supervisor fields are filled
+      const where = {
+        nama_supervisor: nama
+      };
+      
+      // Add condition for filled signature fields (not null and not empty)
+      const ttdConditions = entry.fields.map(field => ({
+        [field]: { [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: "" }] }
+      }));
+      
+      if (ttdConditions.length === 1) {
+        // Single field, use AND
+        Object.assign(where, ttdConditions[0]);
+      } else {
+        // Multiple fields, use AND for ttd conditions (all must be filled)
+        where[Op.and] = ttdConditions;
       }
-    });
-    res.json({ total: data.length, laporan: data });
+      
+      const data = await entry.model.findAll({ where });
+      result[entry.name] = {
+        total: data.length,
+        laporan: data
+      };
+    }
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -109,14 +140,33 @@ export const getLogbookHarianMasterSudahTtdSupervisor = async (req, res) => {
 export const countLogbookHarianMasterBelumTtdSupervisor = async (req, res) => {
   const nama = req.params.nama;
   try {
-    const count = await LogbookHarianMaster.count({
-      where: {
-        nama_supervisor: nama,
-        status: "Submitted",
-        ttd_supervisor: { [Op.or]: [null, ""] }
+    // Count all unsigned reports across all models
+    let totalCount = 0;
+    
+    for (const entry of models) {
+      // Build where condition: nama_supervisor matches AND any ttd_supervisor field is empty
+      const where = {
+        nama_supervisor: nama
+      };
+      
+      // Add condition for empty signature fields
+      const ttdConditions = entry.fields.map(field => ({
+        [field]: { [Op.or]: [null, ""] }
+      }));
+      
+      if (ttdConditions.length === 1) {
+        // Single field, use AND
+        Object.assign(where, ttdConditions[0]);
+      } else {
+        // Multiple fields, use OR for ttd conditions
+        where[Op.or] = ttdConditions;
       }
-    });
-    res.json({ total: count });
+      
+      const count = await entry.model.count({ where });
+      totalCount += count;
+    }
+    
+    res.json({ total: totalCount });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

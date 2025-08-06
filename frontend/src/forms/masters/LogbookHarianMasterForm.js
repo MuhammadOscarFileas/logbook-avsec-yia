@@ -15,7 +15,8 @@ const SearchableDropdown = ({
   onChange, 
   placeholder, 
   required = false,
-  className = ""
+  className = "",
+  disabled = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,8 +40,10 @@ const SearchableDropdown = ({
   return (
     <div className={`relative ${className}`}>
       <div
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer bg-white"
-        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 h-10 flex items-center ${
+          disabled ? 'cursor-not-allowed bg-gray-100' : 'cursor-pointer bg-white'
+        }`}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
       >
         <div className="flex justify-between items-center">
           <span className={selectedOption ? 'text-gray-900' : 'text-gray-500'}>
@@ -52,7 +55,7 @@ const SearchableDropdown = ({
         </div>
       </div>
       
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           <div className="p-2 border-b border-gray-200">
             <input
@@ -85,13 +88,14 @@ const SearchableDropdown = ({
   );
 };
 
-const LogbookHarianMasterForm = () => {
+const LogbookHarianMasterForm = ({ previewMode = false }) => {
   const navigate = useNavigate();
   const query = useQuery();
   const { id } = useParams(); // Get ID from URL for edit mode
   const lokasi = query.get('lokasi') || '';
   const { auth } = useAuth();
   const isEditMode = !!id;
+  const isPreviewMode = previewMode;
 
   // Form state
   const [formData, setFormData] = useState({
@@ -129,6 +133,26 @@ const LogbookHarianMasterForm = () => {
     };
     loadUsers();
   }, []);
+
+  // Auto-fill supervisor based on officer's pos and shift
+  useEffect(() => {
+    if (auth?.user && users.length > 0) {
+      const currentUser = auth.user;
+      const matchingSupervisors = users.filter(user => 
+        user.role === 'supervisor' && 
+        user.pos === currentUser.pos && 
+        user.shift === currentUser.shift
+      );
+      
+      if (matchingSupervisors.length > 0 && !formData.nama_supervisor) {
+        // Auto-fill with the first matching supervisor
+        setFormData(prev => ({
+          ...prev,
+          nama_supervisor: matchingSupervisors[0].nama_lengkap
+        }));
+      }
+    }
+  }, [auth?.user, users, formData.nama_supervisor]);
 
   // Load existing data for edit mode
   useEffect(() => {
@@ -260,6 +284,13 @@ const LogbookHarianMasterForm = () => {
     setLoading(true);
     setError(null);
 
+    // Validate supervisor selection
+    if (!formData.nama_supervisor) {
+      setError('Supervisor harus dipilih sebelum menyimpan logbook');
+      setLoading(false);
+      return;
+    }
+
     try {
       if (isEditMode) {
         console.log('Starting edit mode update...');
@@ -362,6 +393,13 @@ const LogbookHarianMasterForm = () => {
   const handleSubmitToSupervisor = async () => {
     setLoading(true);
     setError(null);
+
+    // Validate supervisor selection
+    if (!formData.nama_supervisor) {
+      setError('Supervisor harus dipilih sebelum mengirim ke supervisor');
+      setLoading(false);
+      return;
+    }
 
     try {
       // Update status to submitted
@@ -481,7 +519,7 @@ const LogbookHarianMasterForm = () => {
     user.nama_lengkap !== auth?.user?.nama_lengkap && user.role === 'officer'
   );
   
-  // Filter supervisors for supervisor dropdown
+  // Filter supervisors for supervisor dropdown - show all supervisors
   const availableSupervisors = users.filter(user => user.role === 'supervisor');
 
   // Convert to options format for SearchableDropdown
@@ -496,9 +534,9 @@ const LogbookHarianMasterForm = () => {
   }));
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mx-auto">
-        <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+      <div className="w-full h-full">
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 h-full">
           <div className="flex items-center justify-between mb-6">
         <button
           type="button"
@@ -510,14 +548,14 @@ const LogbookHarianMasterForm = () => {
               </svg>
           Kembali
         </button>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {isEditMode ? 'Edit Logbook Harian' : 'Buat Logbook Harian Baru'}
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+              {isPreviewMode ? 'Preview Logbook Harian' : isEditMode ? 'Edit Logbook Harian' : 'Buat Logbook Harian Baru'}
             </h2>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6 h-full">
             {/* Basic Information */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Tanggal</label>
                 <input 
@@ -526,6 +564,7 @@ const LogbookHarianMasterForm = () => {
                   value={formData.tanggal} 
                   onChange={e => handleFormChange('tanggal', e.target.value)} 
                   required 
+                  disabled={isPreviewMode}
                 />
               </div>
               <div>
@@ -535,6 +574,7 @@ const LogbookHarianMasterForm = () => {
                   value={formData.shift} 
                   onChange={e => handleFormChange('shift', e.target.value)} 
                   required
+                  disabled={isPreviewMode}
                 >
                   <option value="">Pilih Shift</option>
                   <option value="Pagi">Pagi</option>
@@ -542,13 +582,14 @@ const LogbookHarianMasterForm = () => {
                   <option value="Malam">Malam</option>
                 </select>
               </div>
-              <div>
+              <div className="sm:col-span-2 lg:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Lokasi</label>
                 <input 
                   type="text" 
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100" 
                   value={formData.lokasi} 
                   readOnly 
+                  disabled={isPreviewMode}
                 />
               </div>
             </div>
@@ -558,10 +599,10 @@ const LogbookHarianMasterForm = () => {
               <label className="block text-sm font-medium text-gray-700 mb-4">Uraian Tugas</label>
               <div className="space-y-3">
                 {uraianTugas.map((row, idx) => (
-                  <div key={idx} className="flex gap-3 items-start p-4 border border-gray-200 rounded-lg">
-                    <span className="w-8 text-center text-gray-500 font-medium pt-2">{idx + 1}</span>
-                    <div className="grid grid-cols-1 md:grid-cols-8 gap-3 flex-1">
-                      <div className="md:col-span-1">
+                  <div key={idx} className="flex gap-3 items-start p-3 sm:p-4 border border-gray-200 rounded-lg">
+                    <span className="w-6 sm:w-8 text-center text-gray-500 font-medium pt-2 text-sm">{idx + 1}</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-8 gap-2 sm:gap-3 flex-1">
+                      <div className="sm:col-span-1 lg:col-span-1">
                         <label className="block text-xs text-gray-600 mb-1">Jam Mulai</label>
                         <input 
                           type="time" 
@@ -569,9 +610,10 @@ const LogbookHarianMasterForm = () => {
                           value={row.jam_mulai} 
                           onChange={e => handleTugasChange(idx, 'jam_mulai', e.target.value)} 
                           required 
+                          disabled={isPreviewMode}
                         />
                       </div>
-                      <div className="md:col-span-1">
+                      <div className="sm:col-span-1 lg:col-span-1">
                         <label className="block text-xs text-gray-600 mb-1">Jam Selesai</label>
                         <input 
                           type="time" 
@@ -579,9 +621,10 @@ const LogbookHarianMasterForm = () => {
                           value={row.jam_akhir} 
                           onChange={e => handleTugasChange(idx, 'jam_akhir', e.target.value)} 
                           required 
+                          disabled={isPreviewMode}
                         />
                       </div>
-                      <div className="md:col-span-4">
+                      <div className="sm:col-span-2 lg:col-span-4">
                         <label className="block text-xs text-gray-600 mb-1">Uraian Tugas</label>
                         <textarea 
                           className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none" 
@@ -589,38 +632,42 @@ const LogbookHarianMasterForm = () => {
                           value={row.uraian_tugas} 
                           onChange={e => handleTugasChange(idx, 'uraian_tugas', e.target.value)} 
                           required 
+                          disabled={isPreviewMode}
                         />
                       </div>
-                      <div className="md:col-span-2">
+                      <div className="sm:col-span-2 lg:col-span-2">
                         <label className="block text-xs text-gray-600 mb-1">Keterangan</label>
                         <input 
                           type="text" 
                           className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" 
                           value={row.keterangan} 
                           onChange={e => handleTugasChange(idx, 'keterangan', e.target.value)} 
+                          disabled={isPreviewMode}
                         />
-            </div>
-          </div>
-                  {uraianTugas.length > 1 && (
+                      </div>
+                    </div>
+                    {uraianTugas.length > 1 && !isPreviewMode && (
                       <button 
                         type="button" 
-                        className="text-red-500 hover:text-red-700 mt-6" 
+                        className="text-red-500 hover:text-red-700 mt-2 sm:mt-6" 
                         onClick={() => handleRemoveTugas(idx)}
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
-                  )}
-                </div>
-              ))}
-                <button 
-                  type="button" 
-                  className="text-blue-600 font-medium hover:text-blue-700" 
-                  onClick={handleAddTugas}
-                >
-                  + Tambah Tugas
-                </button>
+                    )}
+                  </div>
+                ))}
+                {!isPreviewMode && (
+                  <button 
+                    type="button" 
+                    className="text-blue-600 font-medium hover:text-blue-700" 
+                    onClick={handleAddTugas}
+                  >
+                    + Tambah Tugas
+                  </button>
+                )}
               </div>
             </div>
 
@@ -629,8 +676,8 @@ const LogbookHarianMasterForm = () => {
               <label className="block text-sm font-medium text-gray-700 mb-4">Uraian Inventaris</label>
               <div className="space-y-3">
               {uraianInventaris.map((row, idx) => (
-                  <div key={idx} className="flex gap-3 items-center p-4 border border-gray-200 rounded-lg">
-                    <span className="w-8 text-center text-gray-500 font-medium">{idx + 1}</span>
+                  <div key={idx} className="flex gap-3 items-center p-3 sm:p-4 border border-gray-200 rounded-lg">
+                    <span className="w-6 sm:w-8 text-center text-gray-500 font-medium text-sm">{idx + 1}</span>
                     <div className="flex-1">
                       <label className="block text-xs text-gray-600 mb-1">Nama Inventaris</label>
                       <input 
@@ -638,86 +685,119 @@ const LogbookHarianMasterForm = () => {
                         className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" 
                         value={row.nama_inventaris} 
                         onChange={e => handleInventarisChange(idx, 'nama_inventaris', e.target.value)}  
+                        disabled={isPreviewMode}
                       />
                     </div>
-                    <div className="w-24">
+                    <div className="w-20 sm:w-24">
                       <label className="block text-xs text-gray-600 mb-1">Jumlah</label>
                       <input 
                         type="number" 
                         className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" 
                         value={row.jumlah} 
                         onChange={e => handleInventarisChange(idx, 'jumlah', e.target.value)} 
+                        disabled={isPreviewMode}
                       />
                     </div>
-                  {uraianInventaris.length > 1 && (
+                  {uraianInventaris.length > 1 && !isPreviewMode && (
                       <button 
                         type="button" 
                         className="text-red-500 hover:text-red-700" 
                         onClick={() => handleRemoveInventaris(idx)}
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
                   )}
                 </div>
               ))}
-                <button 
-                  type="button" 
-                  className="text-blue-600 font-medium hover:text-blue-700" 
-                  onClick={handleAddInventaris}
-                >
-                  + Tambah Inventaris
-                </button>
+                {!isPreviewMode && (
+                  <button 
+                    type="button" 
+                    className="text-blue-600 font-medium hover:text-blue-700" 
+                    onClick={handleAddInventaris}
+                  >
+                    + Tambah Inventaris
+                  </button>
+                )}
               </div>
             </div>
 
             {/* Signatures */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-stretch">
               {/* Menyerahkan */}
-              <div>
+              <div className="flex flex-col h-full min-h-[200px]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Yang Menyerahkan</label>
-                <input 
-                  type="text" 
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 mb-3" 
-                  value={formData.nama_yg_menyerahkan} 
-                  readOnly 
-                />
-                <SignaturePad
-                  onSignatureChange={(signature) => handleFormChange('ttd_yg_menyerahkan', signature)}
-                  defaultValue={formData.ttd_yg_menyerahkan}
-                  placeholder="Tanda tangan yang menyerahkan"
-                />
+                <div className="flex-1 flex flex-col justify-start">
+                  <input 
+                    type="text" 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 mb-3 h-10 flex items-center" 
+                    value={formData.nama_yg_menyerahkan} 
+                    readOnly 
+                    disabled={isPreviewMode}
+                  />
+                  <div className="flex-1 min-h-[160px]">
+                    <SignaturePad
+                      onSignatureChange={(signature) => handleFormChange('ttd_yg_menyerahkan', signature)}
+                      defaultValue={formData.ttd_yg_menyerahkan}
+                      placeholder="Tanda tangan yang menyerahkan"
+                      disabled={isPreviewMode}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Menerima */}
-              <div>
+              <div className="flex flex-col h-full min-h-[200px]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Yang Menerima</label>
-                <SearchableDropdown
-                  options={officerOptions}
-                  value={formData.nama_yg_menerima}
-                  onChange={(value) => handleFormChange('nama_yg_menerima', value)}
-                  placeholder="Pilih nama yang menerima"
-                  required={true}
-                  className="mb-3"
-                />
-                <SignaturePad
-                  onSignatureChange={(signature) => handleFormChange('ttd_yg_menerima', signature)}
-                  defaultValue={formData.ttd_yg_menerima}
-                  placeholder="Tanda tangan yang menerima"
-                />
+                <div className="flex-1 flex flex-col justify-start">
+                  <SearchableDropdown
+                    options={officerOptions}
+                    value={formData.nama_yg_menerima}
+                    onChange={(value) => handleFormChange('nama_yg_menerima', value)}
+                    placeholder="Pilih nama yang menerima"
+                    required={true}
+                    className="mb-3"
+                    disabled={isPreviewMode}
+                  />
+                  <div className="flex-1 min-h-[160px]">
+                    <SignaturePad
+                      onSignatureChange={(signature) => handleFormChange('ttd_yg_menerima', signature)}
+                      defaultValue={formData.ttd_yg_menerima}
+                      placeholder="Tanda tangan yang menerima"
+                      disabled={isPreviewMode}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Supervisor */}
-              <div>
+              <div className="sm:col-span-2 lg:col-span-1 flex flex-col h-full min-h-[200px]">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Supervisor</label>
-                <SearchableDropdown
-                  options={supervisorOptions}
-                  value={formData.nama_supervisor}
-                  onChange={(value) => handleFormChange('nama_supervisor', value)}
-                  placeholder="Pilih supervisor"
-                  required={true}
-                />
+                <div className="flex-1 flex flex-col justify-start">
+                  <SearchableDropdown
+                    options={supervisorOptions}
+                    value={formData.nama_supervisor}
+                    onChange={(value) => handleFormChange('nama_supervisor', value)}
+                    placeholder="Pilih supervisor"
+                    required={true}
+                    className="mb-3"
+                    disabled={isPreviewMode}
+                  />
+                  <div className="flex-1 min-h-[160px]">
+                    <SignaturePad
+                      onSignatureChange={(signature) => handleFormChange('ttd_supervisor', signature)}
+                      defaultValue={formData.ttd_supervisor}
+                      placeholder="Tanda tangan supervisor"
+                      disabled={isPreviewMode}
+                    />
+                  </div>
+                  {formData.nama_supervisor && (
+                    <div className="text-xs text-green-600 bg-green-50 border border-green-200 rounded px-2 py-1 mt-2 flex-shrink-0">
+                      ✓ Supervisor dengan pos dan shift yang sama diprioritaskan
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -727,23 +807,25 @@ const LogbookHarianMasterForm = () => {
           </div>
             )}
 
-            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
-              <button 
-                type="submit" 
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50" 
-                disabled={loading}
-              >
-                {loading ? 'Menyimpan...' : (isEditMode ? 'Update Logbook' : 'Simpan Logbook')}
-              </button>
-              <button 
-                type="button"
-                onClick={handleSubmitToSupervisor}
-                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-medium disabled:opacity-50" 
-                disabled={loading}
-              >
-                {loading ? 'Mengirim...' : 'Kirim ke Supervisor'}
-              </button>
-          </div>
+            {!isPreviewMode && (
+              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-gray-200">
+                <button 
+                  type="submit" 
+                  className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50" 
+                  disabled={loading}
+                >
+                  {loading ? 'Menyimpan...' : (isEditMode ? 'Update Logbook' : 'Simpan Logbook')}
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleSubmitToSupervisor}
+                  className="w-full sm:w-auto bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-medium disabled:opacity-50" 
+                  disabled={loading}
+                >
+                  {loading ? 'Mengirim...' : 'Kirim ke Supervisor'}
+                </button>
+              </div>
+            )}
         </form>
         </div>
       </div>

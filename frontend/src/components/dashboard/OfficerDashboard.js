@@ -148,68 +148,68 @@ const OfficerDashboard = () => {
           onClose={() => setShowPasswordReset(false)}
         />
       )}
-      <div className="min-h-screen bg-gray-50 fade-in px-2 sm:px-6 py-8">
-      <div className="w-full mb-4">
-        <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-blue-900">Officer Dashboard</h2>
-        <h3 className="text-base sm:text-lg font-medium mb-6 text-gray-600">Pos: <span className="font-semibold text-blue-700">{userPos || '-'}</span></h3>
-      </div>
-      <div className="w-full">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {lokasiList.length === 0 && <div className="col-span-full text-gray-400">Tidak ada lokasi untuk pos ini.</div>}
-          {lokasiList.map((lokasi, idx) => {
-            const isOpen = openIndex === idx;
-            return (
-              <div key={lokasi} className="col-span-1">
-                <div
-                  className={`bg-white shadow-lg border border-gray-200 transition-all duration-300 cursor-pointer ${isOpen ? 'ring-2 ring-blue-300 rounded-xl' : 'rounded-xl'}`}
-                  onClick={() => handleAccordion(idx)}
-                  style={{ minHeight: 80, borderRadius: '0.75rem' }}
-                >
-                  <div className="flex items-center justify-between px-6 py-5 rounded-t-xl">
-                    <span className={`text-lg sm:text-xl font-semibold text-gray-800 ${isOpen ? 'text-blue-700' : ''}`}>{lokasi}</span>
-                    <svg
-                      className={`w-6 h-6 text-gray-400 transform transition-transform duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`}
-                      fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
+      <div className="min-h-screen bg-gray-50 fade-in px-4 sm:px-6 py-6 sm:py-8">
+        <div className="w-full mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 text-blue-900">Officer Dashboard</h2>
+          <h3 className="text-sm sm:text-base md:text-lg font-medium mb-4 sm:mb-6 text-gray-600">Pos: <span className="font-semibold text-blue-700">{userPos || '-'}</span></h3>
+        </div>
+        <div className="w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+            {lokasiList.length === 0 && <div className="col-span-full text-gray-400">Tidak ada lokasi untuk pos ini.</div>}
+            {lokasiList.map((lokasi, idx) => {
+              const isOpen = openIndex === idx;
+              return (
+                <div key={lokasi} className="col-span-1">
                   <div
-                    className={`overflow-hidden transition-all duration-300 bg-gray-50 ${isOpen ? 'max-h-96 py-2 px-4 rounded-b-xl' : 'max-h-0 py-0 px-4 rounded-b-xl'}`}
-                    style={{
-                      borderTop: isOpen ? '1px solid #e5e7eb' : 'none',
-                      borderBottomLeftRadius: isOpen ? '0.75rem' : '',
-                      borderBottomRightRadius: isOpen ? '0.75rem' : '',
-                    }}
+                    className={`bg-white shadow-md sm:shadow-lg border border-gray-200 transition-all duration-300 cursor-pointer ${isOpen ? 'ring-2 ring-blue-300 rounded-lg sm:rounded-xl' : 'rounded-lg sm:rounded-xl'}`}
+                    onClick={() => handleAccordion(idx)}
+                    style={{ minHeight: '60px', borderRadius: '0.5rem' }}
                   >
-                    {isOpen && (
-                      <div className="flex flex-col gap-2 mt-2">
-                        {lokasiMap[lokasi].map(jenis => (
-                          <button
-                            key={jenis}
-                            onClick={e => {
-                              e.stopPropagation();
-                              if (jenis === 'Logbook Harian') {
-                                navigate(`/forms/masters/logbook-harian?lokasi=${encodeURIComponent(lokasi)}`);
-                              } else {
-                                navigate(`/form/${slugify(jenis)}`);
-                              }
-                            }}
-                            className="w-full text-left bg-white border border-blue-200 rounded-lg px-4 py-3 font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-400 transition"
-                          >
-                            {jenis}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                    <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-5 rounded-t-lg sm:rounded-t-xl">
+                      <span className={`text-sm sm:text-lg md:text-xl font-semibold text-gray-800 ${isOpen ? 'text-blue-700' : ''}`}>{lokasi}</span>
+                      <svg
+                        className={`w-5 h-5 sm:w-6 sm:h-6 text-gray-400 transform transition-transform duration-300 ${isOpen ? 'rotate-90' : 'rotate-0'}`}
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                    <div
+                      className={`overflow-hidden transition-all duration-300 bg-gray-50 ${isOpen ? 'max-h-96 py-2 px-3 sm:px-4 rounded-b-lg sm:rounded-b-xl' : 'max-h-0 py-0 px-3 sm:px-4 rounded-b-lg sm:rounded-b-xl'}`}
+                      style={{
+                        borderTop: isOpen ? '1px solid #e5e7eb' : 'none',
+                        borderBottomLeftRadius: isOpen ? '0.5rem' : '',
+                        borderBottomRightRadius: isOpen ? '0.5rem' : '',
+                      }}
+                    >
+                      {isOpen && (
+                        <div className="flex flex-col gap-2 mt-2">
+                          {lokasiMap[lokasi].map(jenis => (
+                            <button
+                              key={jenis}
+                              onClick={e => {
+                                e.stopPropagation();
+                                if (jenis === 'Logbook Harian') {
+                                  navigate(`/forms/masters/logbook-harian?lokasi=${encodeURIComponent(lokasi)}`);
+                                } else {
+                                  navigate(`/form/${slugify(jenis)}`);
+                                }
+                              }}
+                              className="w-full text-left bg-white border border-blue-200 rounded-md sm:rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-400 transition"
+                            >
+                              {jenis}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 };
